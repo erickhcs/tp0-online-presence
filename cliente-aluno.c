@@ -6,18 +6,23 @@
 
 #define SERVER_ADDRESS "127.0.0.1"
 #define SERVER_PORT 51511
+#define STUDENT_PASSWORD "ALUNO"
+#define MAX_BUFFER_SIZE 1000
 
-void verify_error(int response_number, char methodName[], int socket_to_close)
+void close_connection(char methodName[], int socket_to_close)
+{
+  printf("Erro ao realizar %s!\n\n", methodName);
+
+  if (socket_to_close != 0)
+    close(socket_to_close);
+
+  exit(0);
+}
+
+void verify_error_connection(int response_number, char methodName[], int socket_to_close)
 {
   if (response_number < 0)
-  {
-    printf("Erro ao realizar %s!\n\n", methodName);
-
-    if (socket_to_close != 0)
-      close(socket_to_close);
-
-    exit(0);
-  }
+    close_connection(methodName, socket_to_close);
 }
 
 struct sockaddr_in get_socket_address_config()
@@ -36,15 +41,15 @@ int main()
   printf("\n");
 
   int client_socket_number = socket(AF_INET, SOCK_STREAM, 0);
-  verify_error(client_socket_number, "socket", 0);
+  verify_error_connection(client_socket_number, "socket", 0);
 
   struct sockaddr_in server_socket_address = get_socket_address_config();
 
-  int connect_number = connect(client_socket_number, (struct sockaddr *)&server_socket_address, sizeof(server_socket_address));
-  printf("%d", connect_number);
-  verify_error(connect_number, "connect", client_socket_number);
+  int server_socket_number = connect(client_socket_number, (struct sockaddr *)&server_socket_address, sizeof(server_socket_address));
+  verify_error_connection(server_socket_number, "connect", client_socket_number);
 
-  close(client_socket_number);
+  char received_message[MAX_BUFFER_SIZE];
+  int recv_number = recv(server_socket_number, received_message, MAX_BUFFER_SIZE, 0);
 
   printf("\n\n");
 }

@@ -11,10 +11,13 @@
 #define TEACHER_PASSWORD "PROFESSOR"
 #define READY_MESSAGE "READY"
 #define MAX_BUFFER_SIZE 1000
+#define SIGINT 2
 
-void close_connection(char methodName[], int socket_to_close)
+int socket_to_close = 0;
+
+void close_connection(char error_message[])
 {
-  printf("Erro ao realizar %s!\n\n", methodName);
+  printf("%s\n\n", error_message);
 
   if (socket_to_close != 0)
     close(socket_to_close);
@@ -22,16 +25,37 @@ void close_connection(char methodName[], int socket_to_close)
   exit(0);
 }
 
-void verify_error_connection(int response_number, char methodName[], int socket_to_close)
+void verify_error_connection(int response_number, char method_name[])
 {
   if (response_number < 0)
-    close_connection(methodName, socket_to_close);
+  {
+    char error_message[MAX_BUFFER_SIZE];
+    strcat(error_message, "Erro ao realizar ");
+    strcat(error_message, method_name);
+
+    close_connection(error_message);
+  }
 }
 
-void verify_error_send(int response_number, int messageLength, char methodName[], int socket_to_close)
+void verify_message(char received_message[], char expected_message[])
 {
-  if (response_number != messageLength)
-    close_connection(methodName, socket_to_close);
+  if (strcmp(received_message, expected_message) != 0)
+  {
+    char error_message[MAX_BUFFER_SIZE];
+    strcat(error_message, "Mensagem inesperada do servidor. O cliente esperava \"");
+    strcat(error_message, expected_message);
+    strcat(error_message, "\" e recebeu \"");
+    strcat(error_message, received_message);
+    strcat(error_message, "\"");
+
+    close_connection(error_message);
+  }
+}
+
+void verify_error_send(int response_number, int message_length, char method_name[])
+{
+  if (response_number != message_length)
+    close_connection(method_name);
 }
 
 struct sockaddr_in get_socket_address_config()
@@ -45,34 +69,39 @@ struct sockaddr_in get_socket_address_config()
   return socket_address;
 }
 
+void sigintHandler()
+{
+  close_connection("Operação abortada");
+}
+
 int main()
 {
   printf("\n");
 
+  signal(SIGINT, sigintHandler);
+
   int server_socket_number = socket(AF_INET, SOCK_STREAM, 0);
-  verify_error_connection(server_socket_number, "socket", 0);
+  verify_error_connection(server_socket_number, "socket");
+  socket_to_close = server_socket_number;
 
   struct sockaddr_in server_socket_address = get_socket_address_config();
 
   int bind_number = bind(server_socket_number, (struct sockaddr *)&server_socket_address, sizeof(server_socket_address));
-  verify_error_connection(bind_number, "bind", server_socket_number);
+  verify_error_connection(bind_number, "bind");
 
   int listen_number = listen(server_socket_number, SERVER_MAX_CONNECTIONS);
-  verify_error_connection(listen_number, "listen", server_socket_number);
+  verify_error_connection(listen_number, "listen");
 
   struct sockaddr_in client_socket_address;
-  int client_scoket_length = sizeof(struct sockaddr_in);
+  int client_socket_length = sizeof(struct sockaddr_in);
 
-  int client_socket_number = accept(server_socket_number, (struct sockaddr *)&client_socket_address, (socklen_t *)&client_scoket_length);
-  verify_error_connection(client_socket_number, "accept", server_socket_number);
+  int client_socket_number = accept(server_socket_number, (struct sockaddr *)&client_socket_address, (socklen_t *)&client_socket_length);
+  verify_error_connection(client_socket_number, "accept");
 
-  char ready_message[sizeof(READY_MESSAGE)];
-  inet_pton(AF_INET, READY_MESSAGE, &ready_message);
+  int send_number = send(client_socket_number, READY_MESSAGE, sizeof(READY_MESSAGE), 0);
+  verify_error_send(send_number, sizeof(READY_MESSAGE), "send");
 
-  int send_number = send(client_socket_number, (void *)&ready_message, sizeof(ready_message), 0);
-  verify_error_send(send_number, sizeof(READY_MESSAGE), "send", server_socket_number);
-
-  close(server_socket_number);
+  close(socket_to_close);
 
   printf("\n\n");
 }

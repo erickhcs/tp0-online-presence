@@ -8,10 +8,14 @@
 #define SERVER_PORT 51511
 #define TEACHER_PASSWORD "PROFESSOR"
 #define MAX_BUFFER_SIZE 1000
+#define READY_MESSAGE "READY"
+#define SIGINT 2
 
-void close_connection(char methodName[], int socket_to_close)
+int socket_to_close = 0;
+
+void close_connection(char error_message[])
 {
-  printf("Erro ao realizar %s!\n\n", methodName);
+  printf("%s\n\n", error_message);
 
   if (socket_to_close != 0)
     close(socket_to_close);
@@ -19,10 +23,37 @@ void close_connection(char methodName[], int socket_to_close)
   exit(0);
 }
 
-void verify_error_connection(int response_number, char methodName[], int socket_to_close)
+void verify_error_connection(int response_number, char method_name[])
 {
   if (response_number < 0)
-    close_connection(methodName, socket_to_close);
+  {
+    char error_message[MAX_BUFFER_SIZE];
+    strcat(error_message, "Erro ao realizar ");
+    strcat(error_message, method_name);
+
+    close_connection(error_message);
+  }
+}
+
+void verify_message(char received_message[], char expected_message[])
+{
+  if (strcmp(received_message, expected_message) != 0)
+  {
+    char error_message[MAX_BUFFER_SIZE];
+    strcat(error_message, "Mensagem inesperada do servidor. O cliente esperava \"");
+    strcat(error_message, expected_message);
+    strcat(error_message, "\" e recebeu \"");
+    strcat(error_message, received_message);
+    strcat(error_message, "\"");
+
+    close_connection(error_message);
+  }
+}
+
+void verify_error_send(int response_number, int message_length, char method_name[])
+{
+  if (response_number != message_length)
+    close_connection(method_name);
 }
 
 struct sockaddr_in get_socket_address_config()
@@ -36,20 +67,33 @@ struct sockaddr_in get_socket_address_config()
   return socket_address;
 }
 
+void sigintHandler()
+{
+  close_connection("Operação abortada");
+}
+
 int main()
 {
   printf("\n");
 
+  signal(SIGINT, sigintHandler);
+
   int client_socket_number = socket(AF_INET, SOCK_STREAM, 0);
-  verify_error_connection(client_socket_number, "socket", 0);
+  verify_error_connection(client_socket_number, "socket");
+  socket_to_close = client_socket_number;
 
   struct sockaddr_in server_socket_address = get_socket_address_config();
 
   int server_socket_number = connect(client_socket_number, (struct sockaddr *)&server_socket_address, sizeof(server_socket_address));
-  verify_error_connection(server_socket_number, "connect", client_socket_number);
+  verify_error_connection(server_socket_number, "connect");
 
   char received_message[MAX_BUFFER_SIZE];
-  int recv_number = recv(server_socket_number, received_message, MAX_BUFFER_SIZE, 0);
+
+  int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, MSG_WAITALL);
+  verify_error_connection(recv_number, "recv");
+  verify_message(received_message, READY_MESSAGE);
+
+  close(client_socket_number);
 
   printf("\n\n");
 }

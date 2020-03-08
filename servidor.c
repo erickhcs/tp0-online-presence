@@ -14,6 +14,7 @@
 #define SIGINT 2
 
 int socket_to_close = 0;
+char received_message[MAX_BUFFER_SIZE];
 
 void close_connection(char error_message[])
 {
@@ -100,6 +101,22 @@ int main()
 
   int send_number = send(client_socket_number, READY_MESSAGE, sizeof(READY_MESSAGE), 0);
   verify_error_send(send_number, sizeof(READY_MESSAGE), "send");
+
+  int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
+  verify_error_connection(recv_number, "recv");
+
+  if (strcmp(received_message, STUDENT_PASSWORD) == 0)
+  {
+    printf("ALUNO");
+  }
+  else if (strcmp(received_message, TEACHER_PASSWORD) == 0)
+  {
+    printf("PROFESSOR");
+  }
+  else
+  {
+    close_connection("Senha inválida!");
+  }
 
   close(socket_to_close);
 

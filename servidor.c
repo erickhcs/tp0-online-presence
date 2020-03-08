@@ -12,8 +12,11 @@
 #define READY_MESSAGE "READY"
 #define MAX_BUFFER_SIZE 1000
 #define SIGINT 2
+#define OK_MESSAGE "OK"
+#define REGISTRATION_MESSAGE "MATRICULA"
 
 int socket_to_close = 0;
+char received_message[MAX_BUFFER_SIZE];
 
 void close_connection(char error_message[])
 {
@@ -95,11 +98,45 @@ int main()
   struct sockaddr_in client_socket_address;
   int client_socket_length = sizeof(struct sockaddr_in);
 
-  int client_socket_number = accept(server_socket_number, (struct sockaddr *)&client_socket_address, (socklen_t *)&client_socket_length);
-  verify_error_connection(client_socket_number, "accept");
+  int client_socket_number;
 
-  int send_number = send(client_socket_number, READY_MESSAGE, sizeof(READY_MESSAGE), 0);
-  verify_error_send(send_number, sizeof(READY_MESSAGE), "send");
+  while (client_socket_number = accept(server_socket_number, (struct sockaddr *)&client_socket_address, (socklen_t *)&client_socket_length))
+  {
+    verify_error_connection(client_socket_number, "accept");
+
+    int send_number = send(client_socket_number, READY_MESSAGE, sizeof(READY_MESSAGE), 0);
+    verify_error_send(send_number, sizeof(READY_MESSAGE), "send");
+
+    int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
+    verify_error_connection(recv_number, "recv");
+
+    if (strcmp(received_message, STUDENT_PASSWORD) == 0)
+    {
+      send_number = send(client_socket_number, OK_MESSAGE, sizeof(OK_MESSAGE), 0);
+      verify_error_send(send_number, sizeof(OK_MESSAGE), "send");
+
+      send_number = send(client_socket_number, REGISTRATION_MESSAGE, sizeof(REGISTRATION_MESSAGE), 0);
+      verify_error_send(send_number, sizeof(REGISTRATION_MESSAGE), "send");
+
+      int registration_number;
+      recv_number = recv(client_socket_number, &registration_number, MAX_BUFFER_SIZE, 0);
+      verify_error_connection(recv_number, "recv");
+
+      registration_number = ntohl(registration_number);
+
+      send_number = send(client_socket_number, OK_MESSAGE, sizeof(OK_MESSAGE), 0);
+      verify_error_send(send_number, sizeof(OK_MESSAGE), "send");
+    }
+    else if (strcmp(received_message, TEACHER_PASSWORD) == 0)
+    {
+    }
+    else
+    {
+      printf("Senha inválida!");
+    }
+
+    close(client_socket_number);
+  }
 
   close(socket_to_close);
 

@@ -89,7 +89,7 @@ int main()
 
   char received_message[MAX_BUFFER_SIZE];
 
-  int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, MSG_WAITALL);
+  int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
   verify_error_connection(recv_number, "recv");
   verify_message(received_message, READY_MESSAGE);
 

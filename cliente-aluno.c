@@ -10,6 +10,8 @@
 #define MAX_BUFFER_SIZE 1000
 #define READY_MESSAGE "READY"
 #define SIGINT 2
+#define OK_MESSAGE "OK"
+#define REGISTRATION_MESSAGE "MATRICULA"
 
 int socket_to_close = 0;
 
@@ -53,7 +55,13 @@ void verify_message(char received_message[], char expected_message[])
 void verify_error_send(int response_number, int message_length, char method_name[])
 {
   if (response_number != message_length)
-    close_connection(method_name);
+  {
+    char error_message[MAX_BUFFER_SIZE];
+    strcat(error_message, "Erro ao realizar ");
+    strcat(error_message, method_name);
+
+    close_connection(error_message);
+  }
 }
 
 struct sockaddr_in get_socket_address_config()
@@ -86,12 +94,33 @@ int main()
 
   int server_socket_number = connect(client_socket_number, (struct sockaddr *)&server_socket_address, sizeof(server_socket_address));
   verify_error_connection(server_socket_number, "connect");
-
   char received_message[MAX_BUFFER_SIZE];
 
-  int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, MSG_WAITALL);
+  int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
   verify_error_connection(recv_number, "recv");
   verify_message(received_message, READY_MESSAGE);
+  int send_number = send(client_socket_number, STUDENT_PASSWORD, sizeof(STUDENT_PASSWORD), 0);
+  verify_error_send(send_number, sizeof(STUDENT_PASSWORD), "send");
+
+  recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
+  verify_error_connection(recv_number, "recv");
+  verify_message(received_message, OK_MESSAGE);
+
+  recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
+  verify_error_connection(recv_number, "recv");
+  verify_message(received_message, REGISTRATION_MESSAGE);
+
+  int registration_number;
+  printf("Insira o número de matrícula: ");
+  scanf("%d", &registration_number);
+
+  int converted_registration_number = htonl(registration_number);
+  send_number = send(client_socket_number, &converted_registration_number, sizeof(converted_registration_number), 0);
+  verify_error_send(send_number, sizeof(converted_registration_number), "send");
+
+  recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
+  verify_error_connection(recv_number, "recv");
+  verify_message(received_message, OK_MESSAGE);
 
   close(client_socket_number);
 

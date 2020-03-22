@@ -82,7 +82,7 @@ int main()
 {
   signal(SIGINT, sigintHandler);
 
-  char teacher_password[8];
+  char teacher_password[MAX_BUFFER_SIZE];
   puts("Digite a senha do professor: ");
   gets(teacher_password);
 

@@ -9,7 +9,6 @@
 #define SERVER_PORT 51511
 #define MAX_BUFFER_SIZE 256
 #define READY_MESSAGE "READY"
-#define STUDENT_PASSWORD "ALUNO"
 #define SERVER_ADDRESS "127.0.0.1"
 #define REGISTRATION_MESSAGE "MATRICULA"
 
@@ -84,6 +83,10 @@ int main()
 {
   signal(SIGINT, sigintHandler);
 
+  char student_password[MAX_BUFFER_SIZE];
+  puts("Digite a senha do aluno: ");
+  gets(student_password);
+
   int client_socket_number = socket(AF_INET, SOCK_STREAM, 0);
   verify_error_connection(client_socket_number, "socket");
   socket_to_close = client_socket_number;
@@ -97,9 +100,11 @@ int main()
   int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
   verify_error_connection(recv_number, "recv");
   verify_message(received_message, READY_MESSAGE);
-  
-  int send_number = send(client_socket_number, STUDENT_PASSWORD, sizeof(STUDENT_PASSWORD), 0);
-  verify_error_send(send_number, sizeof(STUDENT_PASSWORD), "send");
+
+  int send_number = send(client_socket_number, student_password, sizeof(student_password), 0);
+  verify_error_send(send_number, sizeof(student_password), "send");
+
+  memset(received_message, 0, sizeof(received_message));
 
   recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
   verify_error_connection(recv_number, "recv");

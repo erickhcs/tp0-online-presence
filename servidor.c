@@ -1,3 +1,4 @@
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,18 +9,47 @@
 #define SIGINT 2
 #define OK_MESSAGE "OK"
 #define SERVER_PORT 51511
+#define PASSWORDS_LENGTH 8
 #define MAX_BUFFER_SIZE 256
 #define READY_MESSAGE "READY"
-#define STUDENT_PASSWORD "ALUNO"
 #define SERVER_MAX_CONNECTIONS 10
 #define SERVER_ADDRESS "127.0.0.1"
-#define TEACHER_PASSWORD "PROFESSOR"
 #define REGISTRATION_MESSAGE "MATRICULA"
 
 int socket_to_close = 0;
 int registration_number_count = 0;
+char random_password[PASSWORDS_LENGTH + 1];
 char received_message[MAX_BUFFER_SIZE];
+char student_password[PASSWORDS_LENGTH + 1];
+char teacher_password[PASSWORDS_LENGTH + 1];
 int registration_number_list[MAX_BUFFER_SIZE];
+
+void generate_random_password()
+{
+  memset(random_password, 0, sizeof(random_password));
+
+  for (int i = 0; i < PASSWORDS_LENGTH; i++)
+  {
+    random_password[i] = (char)((clock() * rand()) % (90 + 1 - 65) + 65);
+  }
+
+  random_password[PASSWORDS_LENGTH] = '\0';
+}
+
+void generate_and_show_passwords()
+{
+  generate_random_password();
+  strcpy(teacher_password, random_password);
+  generate_random_password();
+  strcpy(student_password, random_password);
+
+  puts("TEACHER PASSWORD:");
+  puts(teacher_password);
+  puts("\n");
+  puts("STUDENT PASSWORD:");
+  puts(student_password);
+  puts("\n");
+}
 
 void close_connection(char error_message[])
 {
@@ -96,9 +126,16 @@ int main()
 {
   signal(SIGINT, sigintHandler);
 
+  generate_and_show_passwords();
+
   int server_socket_number = socket(AF_INET, SOCK_STREAM, 0);
   if (verify_error_connection(server_socket_number, "socket") == true)
     exit(0);
+
+  int server_socket_opt = setsockopt(server_socket_number, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+  if (verify_error_connection(server_socket_number, "socketopt") == true)
+    exit(0);
+
   socket_to_close = server_socket_number;
 
   struct sockaddr_in server_socket_address = get_socket_address_config();
@@ -135,7 +172,7 @@ int main()
       continue;
     }
 
-    if (strcmp(received_message, STUDENT_PASSWORD) == 0)
+    if (strcmp(received_message, student_password) == 0)
     {
       send_number = send(client_socket_number, OK_MESSAGE, sizeof(OK_MESSAGE), 0);
       if (verify_error_send(send_number, sizeof(OK_MESSAGE), "send") == true)
@@ -170,7 +207,7 @@ int main()
         continue;
       }
     }
-    else if (strcmp(received_message, TEACHER_PASSWORD) == 0)
+    else if (strcmp(received_message, teacher_password) == 0)
     {
       char registration_message[MAX_BUFFER_SIZE];
       memset(registration_message, 0, sizeof(registration_message));

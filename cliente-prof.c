@@ -10,7 +10,6 @@
 #define MAX_BUFFER_SIZE 256
 #define READY_MESSAGE "READY"
 #define SERVER_ADDRESS "127.0.0.1"
-#define TEACHER_PASSWORD "PROFESSOR"
 
 int socket_to_close = 0;
 
@@ -83,6 +82,10 @@ int main()
 {
   signal(SIGINT, sigintHandler);
 
+  char teacher_password[8];
+  puts("Digite a senha do professor: ");
+  gets(teacher_password);
+
   int client_socket_number = socket(AF_INET, SOCK_STREAM, 0);
   verify_error_connection(client_socket_number, "socket");
   socket_to_close = client_socket_number;
@@ -98,8 +101,8 @@ int main()
   verify_error_connection(recv_number, "recv");
   verify_message(received_message, READY_MESSAGE);
 
-  int send_number = send(client_socket_number, TEACHER_PASSWORD, sizeof(TEACHER_PASSWORD), 0);
-  verify_error_send(send_number, sizeof(TEACHER_PASSWORD), "send");
+  int send_number = send(client_socket_number, teacher_password, sizeof(teacher_password), 0);
+  verify_error_send(send_number, sizeof(teacher_password), "send");
 
   memset(received_message, 0, sizeof(received_message));
 

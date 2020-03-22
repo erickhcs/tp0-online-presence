@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 
-#define SERVER_ADDRESS "127.0.0.1"
-#define SERVER_PORT 51511
-#define TEACHER_PASSWORD "PROFESSOR"
-#define MAX_BUFFER_SIZE 1000
-#define READY_MESSAGE "READY"
 #define SIGINT 2
+#define OK_MESSAGE "OK"
+#define SERVER_PORT 51511
+#define MAX_BUFFER_SIZE 256
+#define READY_MESSAGE "READY"
+#define SERVER_ADDRESS "127.0.0.1"
+#define TEACHER_PASSWORD "PROFESSOR"
 
 int socket_to_close = 0;
 
@@ -53,7 +54,13 @@ void verify_message(char received_message[], char expected_message[])
 void verify_error_send(int response_number, int message_length, char method_name[])
 {
   if (response_number != message_length)
-    close_connection(method_name);
+  {
+    char error_message[MAX_BUFFER_SIZE];
+    strcat(error_message, "Erro ao realizar ");
+    strcat(error_message, method_name);
+
+    close_connection(error_message);
+  }
 }
 
 struct sockaddr_in get_socket_address_config()
@@ -74,8 +81,6 @@ void sigintHandler()
 
 int main()
 {
-  printf("\n");
-
   signal(SIGINT, sigintHandler);
 
   int client_socket_number = socket(AF_INET, SOCK_STREAM, 0);
@@ -93,7 +98,26 @@ int main()
   verify_error_connection(recv_number, "recv");
   verify_message(received_message, READY_MESSAGE);
 
-  close(client_socket_number);
+  int send_number = send(client_socket_number, TEACHER_PASSWORD, sizeof(TEACHER_PASSWORD), 0);
+  verify_error_send(send_number, sizeof(TEACHER_PASSWORD), "send");
 
-  printf("\n\n");
+  memset(received_message, 0, sizeof(received_message));
+
+  while ((recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0)) > 0)
+  {
+    verify_error_connection(recv_number, "recv");
+
+    if (strcmp(received_message, "\0") == 0)
+    {
+      break;
+    }
+
+    printf("%s\n", received_message);
+    memset(received_message, 0, sizeof(received_message));
+  }
+
+  send_number = send(client_socket_number, OK_MESSAGE, sizeof(OK_MESSAGE), 0);
+  verify_error_send(send_number, sizeof(OK_MESSAGE), "send");
+
+  close(client_socket_number);
 }

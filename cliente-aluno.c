@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 
-#define SERVER_ADDRESS "127.0.0.1"
-#define SERVER_PORT 51511
-#define STUDENT_PASSWORD "ALUNO"
-#define MAX_BUFFER_SIZE 1000
-#define READY_MESSAGE "READY"
 #define SIGINT 2
 #define OK_MESSAGE "OK"
+#define SERVER_PORT 51511
+#define MAX_BUFFER_SIZE 256
+#define READY_MESSAGE "READY"
+#define STUDENT_PASSWORD "ALUNO"
+#define SERVER_ADDRESS "127.0.0.1"
 #define REGISTRATION_MESSAGE "MATRICULA"
 
 int socket_to_close = 0;
@@ -82,8 +82,6 @@ void sigintHandler()
 
 int main()
 {
-  printf("\n");
-
   signal(SIGINT, sigintHandler);
 
   int client_socket_number = socket(AF_INET, SOCK_STREAM, 0);
@@ -99,6 +97,7 @@ int main()
   int recv_number = recv(client_socket_number, received_message, MAX_BUFFER_SIZE, 0);
   verify_error_connection(recv_number, "recv");
   verify_message(received_message, READY_MESSAGE);
+  
   int send_number = send(client_socket_number, STUDENT_PASSWORD, sizeof(STUDENT_PASSWORD), 0);
   verify_error_send(send_number, sizeof(STUDENT_PASSWORD), "send");
 
@@ -123,6 +122,4 @@ int main()
   verify_message(received_message, OK_MESSAGE);
 
   close(client_socket_number);
-
-  printf("\n\n");
 }

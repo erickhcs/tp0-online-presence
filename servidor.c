@@ -23,9 +23,6 @@
 #define REGISTRATION_MESSAGE "MATRICULA"
 
 int socket_to_close = 0;
-int registration_number_count = 0;
-char received_message[MAX_BUFFER_SIZE];
-int registration_number_list[MAX_BUFFER_SIZE];
 
 void close_connection()
 {
@@ -96,6 +93,10 @@ void sigintHandler()
 
 int main()
 {
+  int registration_number_count = 0;
+  char received_message[MAX_BUFFER_SIZE];
+  int registration_number_list[MAX_BUFFER_SIZE];
+
   //Fecha a conexão quando o usuário fecha o programa com CTRL + C
   signal(SIGINT, sigintHandler);
 
@@ -115,7 +116,6 @@ int main()
   int bind_number = bind(server_socket_number, (struct sockaddr *)&server_socket_address, sizeof(server_socket_address));
   if (verify_error_connection(bind_number) == true)
     exit(0);
-
 
   int listen_number = listen(server_socket_number, SERVER_MAX_CONNECTIONS);
   if (verify_error_connection(listen_number) == true)

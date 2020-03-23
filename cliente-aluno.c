@@ -45,8 +45,8 @@ void verify_message(char received_message[], char expected_message[])
   if (strcmp(received_message, expected_message) != 0)
     close_connection();
 }
-// Verifica se enviou mensagem completa
 
+// Verifica se enviou mensagem completa
 void verify_error_send(int response_number, int message_length)
 {
   if (response_number != message_length)
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 {
   char received_message[MAX_BUFFER_SIZE];
 
-  // Verifica se recebu (1)senha do aluno e (2) matrícula na linha de comando
+  // Verifica se recebeu (1) senha do aluno e (2) matrícula na linha de comando
   if (argc < 3)
     return;
 
